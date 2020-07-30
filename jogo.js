@@ -1,3 +1,6 @@
+const som_HIT = new Audio();
+som_HIT.src = './efeitos/hit.wav'
+
 const sprites = new Image();
 sprites.src = './sprites.png';
 
@@ -69,6 +72,7 @@ const ground = {
     }
 }
 
+//colisao do flappyBird com o chao
 function collide(flappyBird, ground){
     const flappyBirdY = flappyBird.dHeight + flappyBird.dy
     const groundY = ground.dy;
@@ -78,6 +82,8 @@ function collide(flappyBird, ground){
     }
     return false
 }
+
+//cria um flappyBird novo
 function createFlappyBird(){
     const flappyBird = {
         source: sprites,
@@ -103,7 +109,10 @@ function createFlappyBird(){
         update(){
             if(collide(flappyBird, ground)){
                 console.log("Fez colisao")
-                changeScreen(Screens.INICIO)
+                som_HIT.play()
+                setTimeout(()=>{
+                    changeScreen(Screens.INICIO)
+                },500)
                 return
             }
             flappyBird.velocidade = flappyBird.velocidade + flappyBird.gravidade,
@@ -151,9 +160,9 @@ const messageGetReady = {
 }
 
 const global = {}
-//atualiza modo de tela
 let activeScreen = {}
 
+//atualiza modo de tela
 function changeScreen(newScreen){
     activeScreen = newScreen
 
@@ -161,7 +170,7 @@ function changeScreen(newScreen){
         Screens.INICIO.initialize()
     }
 }
-//cada tela vai ter funçoes update e render
+//telas de inicio e jogo
 const Screens = {
     INICIO:{
         initialize(){
@@ -196,7 +205,7 @@ const Screens = {
     }
 }
 
-
+//renderiza o canvas
 function loop(){
     
     activeScreen.render()
