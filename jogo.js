@@ -69,36 +69,61 @@ const ground = {
     }
 }
 
+function collide(flappyBird, ground){
+    const flappyBirdY = flappyBird.dHeight + flappyBird.dy
+    const groundY = ground.dy;
 
-
-const flappyBird = {
-    source: sprites,
-    spriteX: 0,             //sx, sy,          (Origem/ponto inicial)
-    spriteY: 0,
-    spriteWidth: 33,        //sWidth, sHeight, (Tamanho do recorte na Sprite)
-    spriteHeight: 24,
-    dx: 10,                 //dx, dy,          (Origem de inserção da imagem no canvas)
-    dy: 50,
-    dWidth: 33,             
-    dHeight: 24,            //dWidth, dHeight  (Tamanho da imagem no canvas)
-
-    render(){
-        contexto.drawImage(
-            flappyBird.source,
-            flappyBird.spriteX, flappyBird.spriteY,
-            flappyBird.spriteWidth, flappyBird.spriteHeight,
-            flappyBird.dx, flappyBird.dy,
-            flappyBird.dWidth, flappyBird.dHeight,
-        );
-    },
-
-    gravidade: 0.25,
-    velocidade: 0,
-    update(){
-        flappyBird.velocidade = flappyBird.velocidade + flappyBird.gravidade,
-        //console.log(flappyBird.velocidade)
-        flappyBird.dy = flappyBird.dy + flappyBird.velocidade;
+    if(flappyBirdY>=groundY){
+        return true
     }
+    return false
+}
+function createFlappyBird(){
+    const flappyBird = {
+        source: sprites,
+        spriteX: 0,             //sx, sy,          (Origem/ponto inicial)
+        spriteY: 0,
+        spriteWidth: 33,        //sWidth, sHeight, (Tamanho do recorte na Sprite)
+        spriteHeight: 24,
+        dx: 10,                 //dx, dy,          (Origem de inserção da imagem no canvas)
+        dy: 50,
+        dWidth: 33,             
+        dHeight: 24,            //dWidth, dHeight  (Tamanho da imagem no canvas)
+        
+        pulo: 4.6,
+        jump(){
+            console.log('devo jumpar')
+            console.log("Antes",flappyBird.velocidade)
+            flappyBird.velocidade = -flappyBird.pulo
+            console.log("Depois",flappyBird.velocidade)
+        },
+        
+        gravidade: 0.25,
+        velocidade: 0,
+        update(){
+            if(collide(flappyBird, ground)){
+                console.log("Fez colisao")
+                changeScreen(Screens.INICIO)
+                return
+            }
+            flappyBird.velocidade = flappyBird.velocidade + flappyBird.gravidade,
+            //console.log(flappyBird.velocidade)
+            flappyBird.dy = flappyBird.dy + flappyBird.velocidade;
+        },
+        
+        render(){
+            contexto.drawImage(
+                flappyBird.source,
+                flappyBird.spriteX, flappyBird.spriteY,
+                flappyBird.spriteWidth, flappyBird.spriteHeight,
+                flappyBird.dx, flappyBird.dy,
+                flappyBird.dWidth, flappyBird.dHeight,
+            );
+        },
+    
+        
+    }
+    return flappyBird;
 }
 
 
@@ -125,19 +150,27 @@ const messageGetReady = {
     },
 }
 
+const global = {}
 //atualiza modo de tela
 let activeScreen = {}
 
 function changeScreen(newScreen){
     activeScreen = newScreen
+
+    if(activeScreen.initialize){
+        Screens.INICIO.initialize()
+    }
 }
 //cada tela vai ter funçoes update e render
 const Screens = {
     INICIO:{
+        initialize(){
+            global.flappyBird = createFlappyBird();
+        },
         render(){
             background.render()
             ground.render()
-            flappyBird.render()
+            global.flappyBird.render()
             messageGetReady.render()
         },  
         update(){
@@ -152,11 +185,13 @@ const Screens = {
         render(){
             background.render()
             ground.render()
-            flappyBird.render()
+            global.flappyBird.render()
         },
-
+        click(){
+            global.flappyBird.jump()
+        },
         update(){
-            flappyBird.update()
+            global.flappyBird.update()
         }
     }
 }
