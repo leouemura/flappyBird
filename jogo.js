@@ -113,17 +113,17 @@ function createFlappyBird(){
         
         pulo: 4.6,
         jump(){
-            console.log('devo jumpar')
-            console.log("Antes",flappyBird.velocidade)
+            //console.log('devo jumpar')
+            //console.log("Antes",flappyBird.velocidade)
             flappyBird.velocidade = -flappyBird.pulo
-            console.log("Depois",flappyBird.velocidade)
+            //console.log("Depois",flappyBird.velocidade)
         },
         
         gravidade: 0.25,
         velocidade: 0,
         update(){
             if(collide(flappyBird, global.ground)){
-                console.log("Fez colisao")
+                //console.log("Fez colisao")
                 som_HIT.play()
                 setTimeout(()=>{
                     changeScreen(Screens.INICIO)
@@ -146,7 +146,7 @@ function createFlappyBird(){
         updateFrame(){
             const frameInterval = 10;
             const passedInterval = frames % frameInterval === 0;
-            console.log("passedInterval",passedInterval)
+            //console.log("passedInterval",passedInterval)
 
             if(passedInterval){
                 const baseIncrement = 1;
@@ -196,6 +196,113 @@ const messageGetReady = {
     },
 }
 
+
+
+function createPipes(){
+    const pipes = {
+        source: sprites,
+        //spriteX: 0,                   //sx, sy,          (Origem/ponto inicial)
+        //spriteY: 169,
+        spriteWidth: 52,               //sWidth, sHeight, (Tamanho do recorte na Sprite)
+        spriteHeight: 400,
+        //dx: (canvas.width/2)-174/2,     //dx, dy,          (Origem de inserção da imagem no canvas)
+        //dy: 50,
+        dWidth: 52,             
+        dHeight: 400,                   //dWidth, dHeight  (Tamanho da imagem no canvas)
+        chao:{
+            spriteX: 0,
+            spriteY: 169,
+        },
+        ceu:{
+            spriteX:52,
+            spriteY:169,
+        },
+        space: 80,
+
+        render(){
+            
+            pipes.pares.forEach(function(par){
+                const yRandom = par.y;
+                const spaceBetweenPipes = 90;           //mudar caso queira mais dificil ou mais facil
+
+                //[Cano do Ceu]
+                const pipeCeuX = par.x;
+                const pipeCeuY = yRandom;
+    
+                contexto.drawImage(
+                    pipes.source,
+                    pipes.ceu.spriteX, pipes.ceu.spriteY,
+                    pipes.spriteWidth, pipes.spriteHeight,
+                    pipeCeuX, pipeCeuY,
+                    pipes.dWidth, pipes.dHeight,
+                );
+    
+                //[Cano do Chao]
+                const pipeChaoX = par.x;
+                const pipeChaoY = pipes.dHeight + spaceBetweenPipes + yRandom;
+    
+                contexto.drawImage(
+                    pipes.source,
+                    pipes.chao.spriteX, pipes.chao.spriteY,
+                    pipes.spriteWidth, pipes.spriteHeight,
+                    pipeChaoX, pipeChaoY,
+                    pipes.dWidth, pipes.dHeight,
+                );
+
+                par.canoCeu = {
+                    x: pipeCeuX,
+                    y: pipes.dHeight + pipeCeuY //========adicional pixels a mais para facilitar e dar margem de erro ao colidir
+                }
+                par.canoChao = {
+                    x: pipeChaoX,
+                    y: pipeChaoY                //========adicional pixels a mais para facilitar e dar margem de erro ao colidir
+                }
+            })
+
+        },
+        collidePipe(par){
+            const headFlappy = global.flappyBird.dy;
+            const footFlappy = global.flappyBird.dy + global.flappyBird.dHeight;
+            if(global.flappyBird.dx >= par.x){
+                //console.log("FlappyBird Invadiu a area")
+
+                if(headFlappy <= par.canoCeu.y){                 //verificação de colisão cabeça flappy
+                    return true
+                }
+
+                if(footFlappy >= par.canoChao.y){                //verificação colisão pé flappy
+                    return true
+                }
+            }
+        },
+        pares:[],
+        update(){
+            const passou100Frames = frames % 100 === 0
+            if(passou100Frames){
+                //console.log(passou100Frames)
+                pipes.pares.push({ x: canvas.width, y: -150*(Math.random()+1 /*+Math.random()/5*/) })
+            }
+
+            pipes.pares.forEach(function(par){
+                par.x = par.x -2; //cano desloca 2 pixels (movimento pra esquerda)
+                
+                if(pipes.collidePipe(par)){
+                    som_HIT.play()
+                    //console.log('Voce Perdeu')
+                    changeScreen(Screens.INICIO)
+                }
+
+                if(par.x + pipes.dWidth <= 0){  //remove os canos que passam do fim da tela p n ocupar memoria
+                    pipes.pares.shift();
+                }
+            })
+        },
+    }
+    return pipes
+}
+
+
+
 const global = {}
 let activeScreen = {}
 
@@ -213,15 +320,18 @@ const Screens = {
         initialize(){
             global.flappyBird = createFlappyBird();
             global.ground = createGround();
+            global.pipes = createPipes();
         },
         render(){
             background.render()
             global.ground.render()
             global.flappyBird.render()
-            messageGetReady.render()
+            messageGetReady.render()  
+                          
         },  
         update(){
             global.ground.update()
+            
         },
         click(){
             changeScreen(Screens.JOGO)  
@@ -231,6 +341,7 @@ const Screens = {
     JOGO:{
         render(){
             background.render()
+            global.pipes.render()
             global.ground.render()
             global.flappyBird.render()
         },
@@ -238,6 +349,8 @@ const Screens = {
             global.flappyBird.jump()
         },
         update(){
+            global.pipes.update()
+            global.ground.update()
             global.flappyBird.update()
         }
     }
