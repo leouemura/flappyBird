@@ -1,3 +1,5 @@
+let frames = 0;
+
 const som_HIT = new Audio();
 som_HIT.src = './efeitos/hit.wav'
 
@@ -41,35 +43,48 @@ const background = {
 }
 
 
-
-const ground = {
-    source: sprites,
-    spriteX: 0,              //sx, sy,          (Origem/ponto inicial)
-    spriteY: 610,
-    spriteWidth: 224,        //sWidth, sHeight, (Tamanho do recorte na Sprite)
-    spriteHeight: 112,
-    dx: 0,                   //dx, dy,          (Origem de inserção da imagem no canvas)
-    dy: canvas.height-112,
-    dWidth: 224,             
-    dHeight: 112,            //dWidth, dHeight  (Tamanho da imagem no canvas)
-
-    render(){
-        contexto.drawImage(
-            ground.source,
-            ground.spriteX, ground.spriteY,
-            ground.spriteWidth, ground.spriteHeight,
-            ground.dx, ground.dy,
-            ground.dWidth, ground.dHeight,
-        );
-
-        contexto.drawImage(
-            ground.source,
-            ground.spriteX, ground.spriteY,
-            ground.spriteWidth, ground.spriteHeight,
-            (ground.dx + ground.dWidth), ground.dy,
-            ground.dWidth, ground.dHeight,
-        );
+function createGround(){
+    const ground = {
+        source: sprites,
+        spriteX: 0,              //sx, sy,          (Origem/ponto inicial)
+        spriteY: 610,
+        spriteWidth: 224,        //sWidth, sHeight, (Tamanho do recorte na Sprite)
+        spriteHeight: 112,
+        dx: 0,                   //dx, dy,          (Origem de inserção da imagem no canvas)
+        dy: canvas.height-112,
+        dWidth: 224,             
+        dHeight: 112,            //dWidth, dHeight  (Tamanho da imagem no canvas)
+        
+        update(){
+            const groundSpeed = 1;
+            const repeatGround = ground.dWidth/2
+            const groundMovement = ground.dx - groundSpeed
+            /*
+            console.log('[ground.dx]',ground.dx)
+            console.log('[repeatGround]',repeatGround)
+            console.log('[groundMovement]',groundMovement % repeatGround)
+            */
+            ground.dx = groundMovement % repeatGround
+        },
+        render(){
+            contexto.drawImage(
+                ground.source,
+                ground.spriteX, ground.spriteY,
+                ground.spriteWidth, ground.spriteHeight,
+                ground.dx, ground.dy,
+                ground.dWidth, ground.dHeight,
+            );
+    
+            contexto.drawImage(
+                ground.source,
+                ground.spriteX, ground.spriteY,
+                ground.spriteWidth, ground.spriteHeight,
+                (ground.dx + ground.dWidth), ground.dy,
+                ground.dWidth, ground.dHeight,
+            );
+        }
     }
+    return ground
 }
 
 //colisao do flappyBird com o chao
@@ -87,8 +102,8 @@ function collide(flappyBird, ground){
 function createFlappyBird(){
     const flappyBird = {
         source: sprites,
-        spriteX: 0,             //sx, sy,          (Origem/ponto inicial)
-        spriteY: 0,
+        //spriteX: 0,             //sx, sy,          (Origem/ponto inicial)
+        //spriteY: 0,
         spriteWidth: 33,        //sWidth, sHeight, (Tamanho do recorte na Sprite)
         spriteHeight: 24,
         dx: 10,                 //dx, dy,          (Origem de inserção da imagem no canvas)
@@ -107,7 +122,7 @@ function createFlappyBird(){
         gravidade: 0.25,
         velocidade: 0,
         update(){
-            if(collide(flappyBird, ground)){
+            if(collide(flappyBird, global.ground)){
                 console.log("Fez colisao")
                 som_HIT.play()
                 setTimeout(()=>{
@@ -120,10 +135,32 @@ function createFlappyBird(){
             flappyBird.dy = flappyBird.dy + flappyBird.velocidade;
         },
         
+        //alternancia entre os movimentos (bater asa)
+        movimentos:[
+            { spriteX: 0, spriteY: 0, },    //asa pra cima
+            { spriteX: 0, spriteY: 26, },    //asa pro meio
+            { spriteX: 0, spriteY: 52, },    //asa pra baixo
+            { spriteX: 0, spriteY: 26, },    //asa pro meio
+        ],
+        frameAtual: 0,
+        updateFrame(){
+            const frameInterval = 10;
+            const passedInterval = frames % frameInterval === 0;
+            console.log("passedInterval",passedInterval)
+
+            if(passedInterval){
+                const baseIncrement = 1;
+                const increment = baseIncrement + flappyBird.frameAtual;
+                const baseRepeat = flappyBird.movimentos.length;
+                flappyBird.frameAtual = increment % baseRepeat
+            }
+        },
         render(){
+            flappyBird.updateFrame()
+            const { spriteX, spriteY } = flappyBird.movimentos[flappyBird.frameAtual]
             contexto.drawImage(
                 flappyBird.source,
-                flappyBird.spriteX, flappyBird.spriteY,
+                spriteX, spriteY,
                 flappyBird.spriteWidth, flappyBird.spriteHeight,
                 flappyBird.dx, flappyBird.dy,
                 flappyBird.dWidth, flappyBird.dHeight,
@@ -175,15 +212,16 @@ const Screens = {
     INICIO:{
         initialize(){
             global.flappyBird = createFlappyBird();
+            global.ground = createGround();
         },
         render(){
             background.render()
-            ground.render()
+            global.ground.render()
             global.flappyBird.render()
             messageGetReady.render()
         },  
         update(){
-
+            global.ground.update()
         },
         click(){
             changeScreen(Screens.JOGO)  
@@ -193,7 +231,7 @@ const Screens = {
     JOGO:{
         render(){
             background.render()
-            ground.render()
+            global.ground.render()
             global.flappyBird.render()
         },
         click(){
@@ -211,6 +249,7 @@ function loop(){
     activeScreen.render()
     activeScreen.update()
     
+    frames = frames + 1
     requestAnimationFrame(loop);
 }
 
